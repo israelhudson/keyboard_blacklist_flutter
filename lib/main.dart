@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:keyboard_blacklist_flutter/two_example.dart';
+
+import 'example_platform_channels.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,12 +33,18 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  static const platformNativeToFlutter = MethodChannel('native_to_flutter');
+  static const platformFlutterToNative = MethodChannel('flutter_to_native');
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  var examplePlatformChannel = ExamplePlatformChannel();
+
+  String _result = '';
+
+  String? nameRequest;
+
+  @override
+  void initState() {
+    super.initState();
   }
 
   @override
@@ -47,20 +57,53 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: TextFormField(
+                onChanged: (val) => nameRequest = val,
+                decoration: InputDecoration(hintText: 'Name'),
+              ),
             ),
             Text(
-              '$_counter',
+              'Method Chaneel Result:',
+            ),
+            Text(
+              '$_result',
               style: Theme.of(context).textTheme.headline4,
+            ),
+            FloatingActionButton(
+              heroTag: 'hr1',
+              onPressed: () async {
+                _result =
+                    await examplePlatformChannel.callSimpleMethodChannel();
+                setState(() {});
+              },
+              tooltip: 'Call Method Channel',
+              child: Text('1'),
+            ),
+            FloatingActionButton(
+              heroTag: 'hr2',
+              onPressed: () async {
+                _result = await examplePlatformChannel
+                    .callSimpleMethodChannelWithParams(nameRequest!);
+                setState(() {});
+              },
+              tooltip: 'Call Method Channel with param',
+              child: Text('2'),
+            ),
+            FloatingActionButton(
+              heroTag: 'hr3',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TwoExamplePage()),
+                );
+              },
+              tooltip: 'Go to Outher Example',
+              child: Text('3'),
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
