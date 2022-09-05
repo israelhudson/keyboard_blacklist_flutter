@@ -6,66 +6,61 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL_NATIVE_TO_FLUTTER = "native_to_flutter"
     private val CHANNEL_FLUTTER_TO_NATIVE = "flutter_to_native"
 
+    private val CHANNEL = "unique.identifier.method/hello"
+    private val CHANNEL_STREAM = "unique.identifier.method/stream"
+
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_NATIVE_TO_FLUTTER).setMethodCallHandler {
-                call, result ->
-            if (call.method == "getBatteryLevel") {
-                val batteryLevel = getBatteryLevel()
 
-                if (batteryLevel != -1) {
-                    result.success(batteryLevel)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler {
+                call, result ->
+            if (call.method == "getHelloWorld") {
+                val user: String? = call.argument("user");
+                if(user == null) {
+                    result.success("Hello World")
                 } else {
-                    result.error("UNAVAILABLE", "Battery level not available.", null)
+                    result.success("Hello World, ${user}");
+                    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).invokeMethod("methodCallback", "result callback kt");
                 }
             } else {
                 result.notImplemented()
             }
         }
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_FLUTTER_TO_NATIVE).setMethodCallHandler {
-                call, result ->
-            Log.d("FRUTA", call.arguments.toString());
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_STREAM).setStreamHandler(
+            object : EventChannel.StreamHandler {
+                override fun onListen(args: Any?, events: EventChannel.EventSink) {
+                    var handler = Handler(Looper.getMainLooper())
+                    handler.postDelayed(object : Runnable {
+                        override fun run() {
+                            val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
+                            val currentDate = sdf.format(Date())
+                            events.success(currentDate)
+                            handler.postDelayed(this, 1000)
+                        }
+                    }, 0)
+                }
 
-            if (call.arguments != "" || call.arguments != null) {
-                Log.d("FRUTA", call.arguments.toString());
-
-            } else {
-                //result.notImplemented();
-                result.error("UNAVAILABLE", "FERROU", null)
-
+                override fun onCancel(arguments: Any?) {
+                    println("cancelling listener")
+                }
             }
-
-//            if (call.method == "getBatteryLevel") {
-//
-//            } else {
-//                result.notImplemented()
-//            }
-
-        }
+        )
     }
 
-    private fun getBatteryLevel(): Int {
-        val batteryLevel: Int
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-            batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-        } else {
-            val intent = ContextWrapper(applicationContext).registerReceiver(null, IntentFilter(
-                Intent.ACTION_BATTERY_CHANGED))
-            batteryLevel = intent!!.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) * 100 / intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-        }
-
-        return batteryLevel
-    }
 }

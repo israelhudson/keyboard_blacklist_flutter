@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:keyboard_blacklist_flutter/two_example.dart';
+
+import 'example_platform_channels.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,45 +35,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   static const platformNativeToFlutter = MethodChannel('native_to_flutter');
   static const platformFlutterToNative = MethodChannel('flutter_to_native');
-  String _batteryLevel = 'Unknown battery level.';
-  String isSucess = '-----';
 
-  void callMethodChannel() async {
-    String batteryLevel;
-    try {
-      final int result =
-          await platformNativeToFlutter.invokeMethod('getBatteryLevel');
-      batteryLevel = 'Battery level at $result % .';
-    } on PlatformException catch (e) {
-      batteryLevel = "Failed to get battery level: '${e.message}'.";
-    }
+  var examplePlatformChannel = ExamplePlatformChannel();
 
-    setState(() {
-      _batteryLevel = batteryLevel;
-    });
-  }
+  String _result = '';
 
-  void setMethodChannel() async {
-    String _isSuccess = '-----';
-    try {
-      final int result =
-          await platformFlutterToNative.invokeMethod('getBatteryLevel', '');
-      _isSuccess = result.toString();
-    } on PlatformException catch (e) {
-      _isSuccess = e.message.toString();
-    } on Exception catch (e) {
-      _isSuccess = e.toString();
-    }
-
-    setState(() {
-      isSucess = _isSuccess;
-    });
-  }
+  String? nameRequest;
 
   @override
   void initState() {
-    callMethodChannel();
-    //setMethodChannel();
     super.initState();
   }
 
@@ -84,21 +57,53 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              '$_batteryLevel',
-              style: Theme.of(context).textTheme.headline4,
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: TextFormField(
+                onChanged: (val) => nameRequest = val,
+                decoration: InputDecoration(hintText: 'Name'),
+              ),
             ),
             Text(
-              '$isSucess',
+              'Method Chaneel Result:',
+            ),
+            Text(
+              '$_result',
               style: Theme.of(context).textTheme.headline4,
+            ),
+            FloatingActionButton(
+              heroTag: 'hr1',
+              onPressed: () async {
+                _result =
+                    await examplePlatformChannel.callSimpleMethodChannel();
+                setState(() {});
+              },
+              tooltip: 'Call Method Channel',
+              child: Text('1'),
+            ),
+            FloatingActionButton(
+              heroTag: 'hr2',
+              onPressed: () async {
+                _result = await examplePlatformChannel
+                    .callSimpleMethodChannelWithParams(nameRequest!);
+                setState(() {});
+              },
+              tooltip: 'Call Method Channel with param',
+              child: Text('2'),
+            ),
+            FloatingActionButton(
+              heroTag: 'hr3',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TwoExamplePage()),
+                );
+              },
+              tooltip: 'Go to Outher Example',
+              child: Text('3'),
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => setMethodChannel(),
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
