@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,12 +30,48 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  static const platformNativeToFlutter = MethodChannel('native_to_flutter');
+  static const platformFlutterToNative = MethodChannel('flutter_to_native');
+  String _batteryLevel = 'Unknown battery level.';
+  String isSucess = '-----';
 
-  void _incrementCounter() {
+  void callMethodChannel() async {
+    String batteryLevel;
+    try {
+      final int result =
+          await platformNativeToFlutter.invokeMethod('getBatteryLevel');
+      batteryLevel = 'Battery level at $result % .';
+    } on PlatformException catch (e) {
+      batteryLevel = "Failed to get battery level: '${e.message}'.";
+    }
+
     setState(() {
-      _counter++;
+      _batteryLevel = batteryLevel;
     });
+  }
+
+  void setMethodChannel() async {
+    String _isSuccess = '-----';
+    try {
+      final int result =
+          await platformFlutterToNative.invokeMethod('getBatteryLevel', '');
+      _isSuccess = result.toString();
+    } on PlatformException catch (e) {
+      _isSuccess = e.message.toString();
+    } on Exception catch (e) {
+      _isSuccess = e.toString();
+    }
+
+    setState(() {
+      isSucess = _isSuccess;
+    });
+  }
+
+  @override
+  void initState() {
+    callMethodChannel();
+    //setMethodChannel();
+    super.initState();
   }
 
   @override
@@ -47,18 +84,19 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+            Text(
+              '$_batteryLevel',
+              style: Theme.of(context).textTheme.headline4,
             ),
             Text(
-              '$_counter',
+              '$isSucess',
               style: Theme.of(context).textTheme.headline4,
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: () => setMethodChannel(),
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
