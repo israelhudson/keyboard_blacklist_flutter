@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // import for method channel
+import 'package:flutter/services.dart';
 
 class TwoExamplePage extends StatefulWidget {
   @override
